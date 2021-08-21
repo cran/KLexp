@@ -1,0 +1,9 @@
+e0eeee25905a6a40d37d12b5116d773f *DESCRIPTION
+fcc060d48cfda87d1b3ead68c8ee87fe *NAMESPACE
+13ccf6700d5bb8c0cf739053317b643c *R/Kernel_lasso.R
+700342bb2bd69f6d09ab982b7147f7da *R/Standardization.R
+a87987ad99ea2aa9cf9b9b71d07a822b *man/Z_score.Rd
+b010c6b927c35f242174812e2a0f36c3 *man/gauss.Rd
+cd4b4be60c2bdc20691d97712d2e6396 *man/kernel_lasso_expansion.Rd
+7d64328311810ebbcef3b9e59139275d *man/lasso.control.Rd
+7f3a236a4679d67ab468078624c6494c *man/max_min_scale.Rd

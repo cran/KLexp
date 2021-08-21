@@ -1,0 +1,126 @@
+#' @title kernel_lasso_expansion
+#' @name kernel_lasso_expansion
+#'
+#' @description Kernel_lasso is one feature selection method, which combines the feature expansion and lasso regression together. Kernel function will increase the dimensions of the existed data and then reduce the features by lasso. 'glmnet' package should be higher than 4.1-2.
+#'
+#' @param x Your input features, which have to be data.frame with at least two variables.
+#' @param y The dependent variable
+#' @param sigma The hyperparameter of RBF kernel function, which indicates the width.
+#' @param dataframe Wether the data is dataframe. The default is TURE
+#' @param standard Using 'max_min_scale' or 'Z_score' method to standardize the data. NULL means no standardization
+#' @keywords kernel_lasso_expansion
+#' @author Zongrui Dai
+#' @return The result is stored in one list which contains the orignial dataset, amplified dataset, final features, and lasso output.
+#' @source https://github.com/Zongrui-Dai/Kernel-lasso-feature-expansion
+#' @importFrom graphics plot
+#' @importFrom stats coef
+#' @importFrom glmnet cv.glmnet
+#' @export
+#' @examples
+#' ##Regression (MSE)
+#' data(attenu,package = 'datasets')
+#' result<-kernel_lasso_expansion(x=attenu[,-c(3,5)],y=attenu[,5],
+#' standard = 'max_min',sigma=0.01,control = lasso.control(nfolds=3,type.measure = 'mse'))
+#' summary(result)
+#'
+#' #Plot the lasso
+#' plot(result$lasso)
+#'
+#' #Result
+#' result$original ##The original feature space
+#' result$expansion  ##The feature space after expansion
+#' result$final_feature  ##The name of the final feature
+#' result$final_data  ##The dataframe of final feature
+#'
+#' @references Z. Dai, J. Li, T. Gong, C. Wang (2021), Kernel_lasso feature expansion method: boosting the prediction ability of machine learning in heart attack,” 2021 IEEE.  About  Kernel-lasso feature expansion method: boosting the prediction ability of machine learning in heart attack” 2021 IEEE.
+#'
+library('glmnet')
+library('graphics')
+library('stats')
+kernel_lasso_expansion<-function(x,y,sigma=0.5,standard='max_min',dataframe=T,
+                       control=lasso.control()){
+  if(standard=='max_min'){
+    data<-max_min_scale(x,dataframe)
+  }
+  else if(standard=='Z_score'){
+    data<-Z_score(x,dataframe)
+  }
+  else if(standard==NULL){
+    data<-x
+  }
+  coln<-colnames(data)
+  col<-length(data)
+  id=0
+  for(i in 1:col){
+    for(j in 1:col){
+      if(i == j){
+      }else{
+        w<-gauss(data[,i],data[,j],sigma)
+        id=id+1
+        data<-cbind(data,w)
+        coln<-c(coln,paste(i,j))
+      }
+    }
+  }
+  colnames(data)<-coln
+  ## Lasso reduction
+  nf<-as.numeric(control[['nfolds']])
+  tr<-as.numeric(control[['trace']])
+  type<-control[['type.measure']]
+  lasso<-glmnet::cv.glmnet(as.matrix(data),as.matrix(y),
+                   nfolds = nf,trace.it = tr,type.measure = type)
+  plot(lasso)
+  param<-coef(lasso,s='lambda.min')
+  param<-as.data.frame(as.matrix(param))
+  param$feature<-rownames(param)
+  param_e1<-param[param$'s1'!= 0,]
+  feature<-rownames(param_e1[-1])[-1]
+
+  result<-list(original=x,expansion=data,final_feature=feature,final_data=data[,feature],lasso=lasso)
+  return(result)
+}
+
+#' @title lasso.control
+#' @name lasso.control
+#' @description The same function from glmnet, which controls the training of lasso.
+#'
+#' @param nfolds n-fold cross-validation.
+#' @param trace.it Whether to plot the training process
+#' @param type.measure Choose the loss funcrion.
+#' @return Will return the lasso training setting
+#' @author Zongrui Dai
+#' @source https://github.com/Zongrui-Dai/Kernel-lasso-feature-expansion
+#' @keywords lasso.control
+#' @export
+#' @examples
+#' ##10-fold Cross-validation with MSE as loss function
+#' c<-lasso.control(nfolds=10,type.measure='mse')
+
+lasso.control<-function(nfolds=10,trace.it=1,type.measure='auc'){
+  control<-c(nfolds=nfolds,trace=trace.it,type.measure=type.measure)
+  return(control)
+}
+
+
+#' @title Gauss function
+#' @name gauss
+#' @description Gauss function
+#' @param d1 vector1
+#' @param d2 vector2
+#' @param sigma The hyperparameter of RBF kernel function, which indicates the width.
+#' @return Calculate the Gauss function
+#' @author Zongrui Dai
+#' @source https://github.com/Zongrui-Dai/Kernel-lasso-feature-expansion
+#' @keywords Gauss function
+#' @export
+#' @examples
+#' ##
+#' data(iris,package = 'datasets')
+#' w<-gauss(iris[,1],iris[,2])
+#' print(w)
+
+
+gauss<-function(d1,d2,sigma=0.5){
+  c<-exp(-(d1-d2)^2)/(2*sigma^2)
+  return(c)
+}
